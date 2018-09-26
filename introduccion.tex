@@ -1,0 +1,29 @@
+\subsection{Marco teórico}
+
+
+\subsection{Objetivos}
+
+El objetivo de este Trabajo Práctico es mediante la programaci\'on en lenguaje ensamblador utlizando el modelo SIMD, generar distintos filtros a una \'unica imagen de partida en formato BMP. 
+ La im\'agen original, es a color, y cada uno de sus pixeles por lo tanto esta dotado de una graduaci\'on espec\'ifica de los colores B(blue), G(green), R(red) y finalmente A(alpha), que se refiere a la transparencia del pixel. Cada uno de los colores y la transparencia podr\'an adoptar valores positivos entre 0 y 255. Este rango de valores ocupan un byte en representaci\'on binaria y por lo tanto cada pixel tendr\'a un tama\~no de 4 bytes.
+Los p\'ixeles se almacenan de izquierda a derecha, y cada p\'ixel en memoria se guarda en el siguiente orden: B, G, R, A.
+ Las im\'agenes se encuentran almacenadas como porciones de pixeles contiguos en la memoria, y se las trata como matrices a nivel esquem\'atico. La modificaci\'on de los pixeles originales dada una serie de pautas para cada filtro es lo que dar\'a la im\'agen resultante. 
+ Dada una imagen src (source o fuente), se notara src k[i,j] al valor de la componente k  \{r, g, b, a\} del p\'íxel en la fila i y la columna j de la imagen. La fila 0 corresponde a la fila de más abajo de la imagen. La columna 0 a la de más a la izquierda.Se llamar\'a dst (destiny o destino) a la imagen de salida generada por cada filtro.
+ Los tipos de filtros y procedimientos adoptados se describir\'an en m\'as detalle en la secci\'on filtros.
+
+\subsection{Consideraciones Generales}
+
+
+
+
+%-----------------------------------------------
+% ******************CONSIGNA*******************
+%-----------------------------------------------
+%Describe cada una de las funciones que implementaron. Para la descripción de cada función
+%deberán decir cómo opera una iteración del ciclo de la función. Es decir, cómo mueven los
+%datos a los registros, cómo los reordenan para procesarlos, las operaciones que se aplican
+%a los datos, etc. Además se agregará un detalle más profundo de las secciones de códi-
+%go que consideren más importantes. Para esto pueden utilizar pseudocódigo, diagramas
+%(mostrando gráficamente el contenido de los registros XMM) o cualquier otro recurso que le
+%sea útil para describir la adaptación del algoritmo al procesamiento simultáneo SIMD. No
+%se deberá incluir el código assembler de las funciones (aunque se pueden incluir extractos
+%en donde haga falta).

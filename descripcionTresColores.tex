@@ -1,0 +1,48 @@
+%-----------------------------------------------
+% ******************CONSIGNA*******************
+%-----------------------------------------------
+%Describe cada una de las funciones que implementaron. Para la descripción de cada función
+%deberán decir cómo opera una iteración del ciclo de la función. Es decir, cómo mueven los
+%datos a los registros, cómo los reordenan para procesarlos, las operaciones que se aplican
+%a los datos, etc. Además se agregará un detalle más profundo de las secciones de códi-
+%go que consideren más importantes. Para esto pueden utilizar pseudocódigo, diagramas
+%(mostrando gráficamente el contenido de los registros XMM) o cualquier otro recurso que le
+%sea útil para describir la adaptación del algoritmo al procesamiento simultáneo SIMD. No
+%se deberá incluir el código assembler de las funciones (aunque se pueden incluir extractos
+%en donde haga falta).
+
+El filtro \textit{Tres Colores} se caracteteriza por modificar el color de un píxel en función de su brillo, trabajando sobre cada uno de forma independiente del resto de la imagen. Para poder determinar la coloración de cada píxel destino, se preocedió a efectuar una combinación lineal dada por el brillo y un nuevo color entre las siguientes opciones: rojo, verde y crema.
+
+\subsubsection{Pre-proceso de imagen}
+
+En primer lugar, el algoritmo implementado guarda en memoria las componentes de los nuevos colores así como tres constantes cuyos valores resultan necesarios para determinar qué combinación lineal aplicar en cada píxel. De esta forma, antes de proceder a procesar la imágen se resguardan estas constantes definidas en .rodata en registros xmm, de modo que ya se encuentren disponibles en cada iteración (resultando innecesario buscar sus valores a memoria).
+
+[inserte esquema de registros y lo que tiene cada uno].
+
+En cuanto al procesamiento de la imagen, en cada iteración se trabaja con 4 píxels dado que el tamaño de cada uno es de 4 Bytes -entrando 16 Bytes en el registro XMM1-. La finalización de la ejecución del ciclo se fija mediante una comparación entre la dirección a leer (resguadado en RDI) y la dirección inmediatamente posterior al final de la imagen. Esta última se determina sumando a la dirección fuente de la imagen, el tamaño de las filas (en Bytes) multiplicado por la altura de la imagen en pixels.
+
+\subsubsection{Iteración}
+
+Por cada ciclo el procesamiento consta de las siguientes partes:
+
+\begin{enumerate}
+  \item Cálculo de Brillo
+  \item Máscaras según intensidad de Brillo
+  \item Obtención de Píxels Destino por Combinación Lineal
+  \item Inserción de Tranparencia
+\end{enumerate}
+
+En primer lugar, para iniciar con el \textit{Cálculo de Brillo} se obtienen de los 4 píxels levantados las componentes de cada color por separado, de modo que ocupen un DW cada una. Para ello se emplea un shift lógico empaquedado de DW dado que el mismo completa con ceros las posiciones redefinidas, quedando inalterado el valor de cada componente. De esta forma se obtiene un registro XMM por cada set de bytes rojo, verde y azul de los 4 píxels en proceso.
+Luego, se procede a sumar de a W dichos registros y a convertir los enteros obtenidos a float para su división por 3. Comos los datos en las imágenes son enteros y dado que para finalizar el cálculo de brillo resta tomar parte entera inferior del resultado obtenido, no resulta necesario una precisión mejor que un \textit{single-precision floating-point}. 
+
+Para la obtención de las \textit{Máscaras según intensidad de Brillo} se trabaja por comparación entre las constantes reservadas (véase Pre-proceso de imagen) y los brillos obtenidos mediante las instrucciones pcmpgtd y pcmpeqd. Las mismas setean en 1 en la DW donde se guarda cada brillo en caso de cumplirse la condición de mayor o igual según lo que corresponda en cada caso. En particular cabe resaltar que para el caso \(85 < W \leq 170 \), se efecúa un OR lógico entre las máscaras de bits de las condiciones \(85 \geq W \) y \(W > 170 \), negando la obtenida y quedando así la máscara de brillos de comprendidos entre 85 y 170 inclusive. 
+
+En cuanto a la obtención de los píxels destino, primero se filtró cada color resguardado (rojo, verde y crema) según se cumpliese o no su condición de intensidad de brillo correspondiente. Como la combinación lineal resulta de tomar 3/4 de cada color y sumarle 1/4 del correspondiente brillo, se procedió efectuando la división por 4 al final para evitar pérdida de precisión. Ahora bien como al realizar la multiplicación por 3 de los colores se puede producir \textit{rollover}, se extendió cada componente de los colores de tamaño Byte a Word. Es por ello que resulta necesario desdoblar también el procesamiento de los 4 píxels para realizarlo en partes Low y High (cada una con 2 píxels fuente). Tanto para la multiplicación por tres de los colores como para su suma con el brillo se trabaja con la intrucción ADDW, habiendo previamente efectuado un \textit{merge} entre las partes Low y High de los colores. Una vez realizada la división por 4 de cada Word mediante un shift lógico a la derecha, se empaquedan ambas partes volviendo a trabajar con 4 píxels en un solo registro. 
+
+Resulta importante remarcar que en todo momento la componente correspondiene a la transparencia se encuentra con valor 0. Para que su valor sea 255 se setean todos los bits en 1 mediante una comparación de un registro con sí mismo y se realiza un shift lógico hacia la izquierda para setear en 0 los 3 bytes menos significativos de cada DW. Finalmente se realiza un OR para terminar de obtener los píxels destino, combinando transparencia y colores obtenidos.
+
+
+  
+
+
+
